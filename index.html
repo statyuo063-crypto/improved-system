@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X HUB | Phantom VPN Dashboard 2026</title>
+    <style>
+        :root {
+            --bg-main: #080808;
+            --panel-bg: #121212;
+            --accent-red: #ff2a5f;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; padding-bottom: 75px; overflow-x: hidden; }
+
+        /* Floating Dock */
+        #floating-dock {
+            position: fixed; top: 12px; right: 12px; z-index: 9999;
+            background: rgba(18, 18, 18, 0.9); border: 1px solid #ffffff;
+            border-radius: 20px; padding: 5px 12px; display: flex; align-items: center; gap: 6px;
+            cursor: pointer; box-shadow: 0 0 10px rgba(255,255,255,0.2); backdrop-filter: blur(5px);
+        }
+        #floating-dock span { font-size: 0.68rem; font-weight: bold; color: #ffffff; }
+
+        .container { max-width: 440px; margin: 0 auto; padding: 10px; }
+        .view-pane { display: none; animation: fadeIn 0.15s ease-in-out; }
+        .view-pane.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Top Header */
+        .top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px; margin-bottom: 8px; }
+        .top-title { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+        .server-tag { background: #1a1a1a; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Radar Card (ถอดแบบภาพต้นฉบับ Phantom 100%) */
+        .radar-card {
+            background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px 15px; text-align: center;
+            position: relative; overflow: hidden; margin-bottom: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        .radar-circle {
+            width: 210px; height: 210px; border: 2px dashed rgba(255, 42, 95, 0.4); border-radius: 50%; margin: 0 auto 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+            background: radial-gradient(circle, rgba(255,42,95,0.06) 0%, transparent 70%);
+        }
+        .radar-logo { font-size: 1.6rem; font-weight: 900; color: var(--accent-red); letter-spacing: 2px; }
+        .radar-status { font-size: 1.3rem; font-weight: bold; color: #fff; margin-top: 4px; font-family: monospace; }
+        .radar-desc { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+        /* Key Input Box */
+        .key-box-container { background: #151515; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .key-label { font-size: 0.68rem; color: var(--text-muted); }
+        .key-input-inline { background: transparent; border: none; font-family: monospace; font-size: 0.8rem; font-weight: bold; color: #fff; width: 100%; outline: none; margin-top: 2px; }
+        .btn-action { background: #222; border: 1px solid var(--border-color); color: #fff; font-size: 0.75rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-action:hover { background: #fff; color: #000; }
+
+        /* Stats Grid (3 ช่องตามเรฟภาพ) */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+        .stat-box { background: #151515; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center; }
+        .stat-title { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px; }
+        .stat-val { font-size: 0.82rem; font-weight: bold; color: #fff; }
+
+        /* แถบปุ่มสีแดง สำหรับเปิดใช้งาน/เชื่อมต่อ VPN ตรงหน้าแรก */
+        .action-banner {
+            background: linear-gradient(135deg, #cc0033 0%, #ff2a5f 100%); border-radius: 12px; padding: 15px; text-align: left;
+            box-shadow: 0 5px 20px rgba(255, 42, 95, 0.3); cursor: pointer; transition: transform 0.2s, filter 0.2s; margin-bottom: 12px;
+        }
+        .action-banner:active { transform: scale(0.98); }
+        .banner-title { font-size: 1rem; font-weight: 900; color: #fff; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; }
+        .banner-sub { font-size: 0.72rem; color: rgba(255,255,255,0.85); }
+
+        /* Feature Cards */
+        .card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .card-title { font-size: 0.82rem; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 6px; }
+        .badge-new { background: rgba(255, 42, 95, 0.2); color: var(--accent-red); font-size: 0.6rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+        .card-desc { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4; }
+
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #222; transition: .3s; border-radius: 24px; border: 1px solid rgba(255,255,255,0.2); }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: #888; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-red); }
+        input:checked + .slider:before { transform: translateX(20px); background-color: #ffffff; }
+
+        /* Character Grid */
+        .char-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+        .char-btn {
+            background: #1a1a1a; border: 1px solid var(--border-color); border-radius: 8px;
+            padding: 8px 4px; text-align: center; font-size: 0.65rem; font-weight: bold; color: var(--text-muted); cursor: pointer;
+        }
+        .char-btn.active { background: rgba(255, 42, 95, 0.2); border-color: var(--accent-red); color: #fff; }
+
+        /* Hitbox Matrix */
+        .hitbox-flex { display: flex; gap: 15px; align-items: center; margin-top: 10px; }
+        .hitbox-preview {
+            width: 75px; height: 105px; background: #0a0a0a; border: 1px solid var(--border-color); border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+        }
+        .hitbox-preview svg { width: 35px; height: 45px; fill: var(--text-muted); }
+        .hitbox-lines { flex: 1; }
+        .hitbox-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
+        .hitbox-row.active { color: var(--accent-red); font-weight: bold; }
+
+        .range-slider { width: 100%; accent-color: var(--accent-red); margin-top: 10px; cursor: pointer; }
+        .big-percent { font-size: 1.4rem; font-weight: 900; color: var(--accent-red); text-align: right; margin-top: -22px; }
+        .speed-val-display { font-size: 1.2rem; font-weight: 900; color: #fff; text-align: right; margin-top: -22px; }
+
+        /* Mini Floating Mode */
+        body.mini-float-active { background: transparent !important; }
+        body.mini-float-active .container { max-width: 100% !important; padding: 2px; }
+        body.mini-float-active .top-header, body.mini-float-active .navbar, body.mini-float-active .radar-card { display: none !important; }
+        body.mini-float-active .card { background: rgba(18, 18, 18, 0.95); border: 1px solid #fff; backdrop-filter: blur(5px); }
+        #floating-dock { background: #fff; }
+        #floating-dock span { color: #000; }
+
+        /* Bottom Nav */
+        .navbar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(18, 18, 18, 0.98); border-top: 1px solid var(--border-color);
+            display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; backdrop-filter: blur(10px);
+        }
+        .nav-item {
+            background: none; border: none; color: var(--text-muted); font-size: 0.65rem; font-weight: bold;
+            display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer;
+        }
+        .nav-item.active { color: var(--accent-red); text-shadow: 0 0 8px rgba(255,42,95,0.4); }
+        .nav-item svg { width: 18px; height: 18px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <div id="floating-dock" onclick="toggleFloatMode()">
+        <span>⚡ X HUB</span>
+    </div>
+
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="top-header">
+            <div class="top-title" id="pane-title">หน้าแรก</div>
+            <div class="server-tag">⚙️ X HUB (TH)</div>
+        </div>
+
+        <!-- TAB 1: HOME (RADAR TIMER & PHANTOM VPN CONNECT) -->
+        <div id="tab-home" class="view-pane active">
+            
+            <!-- RADAR TIMER CARD -->
+            <div class="radar-card">
+                <div class="radar-circle">
+                    <div class="radar-logo">X HUB</div>
+                    <div class="radar-status" id="timer-display">ยังไม่เริ่ม</div>
+                    <div class="radar-desc">เวลาคงเหลือ</div>
+                </div>
+            </div>
+
+            <!-- KEY INPUT BOX -->
+            <div class="key-box-container">
+                <div style="flex: 1;">
+                    <div class="key-label">คีย์ใช้งาน (ใส่คีย์แล้วกดเชื่อมต่อ)</div>
+                    <input type="text" id="user-key" class="key-input-inline" value="pldk-21123-268m-50" placeholder="pldk-xxxxx-xxx-x">
+                </div>
+                <button class="btn-action" onclick="verifyKeyAndStartTimer()">ยืนยันคีย์</button>
+            </div>
+
+            <!-- STATS 3 ช่อง -->
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-title">เปิดใช้งาน</div>
+                    <div class="stat-val" id="stat-active" style="color: var(--accent-red);">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">หมดอายุ</div>
+                    <div class="stat-val" id="stat-expire">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">อุปกรณ์</div>
+                    <div class="stat-val">Android / iOS</div>
+                </div>
+            </div>
+
+            <!-- แถบปุ่มสีแดง สำหรับกดเชื่อมต่อ VPN โดยตรงบนหน้าจอ -->
+            <div class="action-banner" id="vpn-connect-btn" onclick="connectVpnService()">
+                <div class="banner-title">
+                    <span id="banner-btn-text">+ เชื่อมต่อ VPN (แก้ปิง 999ms)</span>
+                    <span style="font-size: 1.2rem;">🚀</span>
+                </div>
+                <div class="banner-sub" id="banner-btn-sub">กดเพื่อคัดลอกคอนฟิก และเปิดใช้งานกับ Happ / v2RayTun</div>
+            </div>
+        </div>
+
+        <!-- TAB 2: FEATURES (AIMBOT, HITBOX & SPEED) -->
+        <div id="tab-features" class="view-pane">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">01 แสดงผลบนหน้าจอ</span>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+                <div class="card-desc">เลือกโปรไฟล์ตัวละครและไอคอนลอย</div>
+                <div class="char-grid">
+                    <div class="char-btn active" onclick="selectChar(this)">X HUB</div>
+                    <div class="char-btn" onclick="selectChar(this)">DREAM</div>
+                    <div class="char-btn" onclick="selectChar(this)">ICE WALL</div>
+                    <div class="char-btn" onclick="selectChar(this)">MOCO</div>
+                    <div class="char-btn" onclick="selectChar(this)">CLU</div>
+                    <div class="char-btn" onclick="selectChar(this)">SHIROU</div>
+                    <div class="char-btn" onclick="selectChar(this)">IRIS</div>
+                    <div class="char-btn" onclick="selectChar(this)">DREKI</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">02 จุดเล็ง <span class="badge-new">ใหม่</span></span>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+                <div class="card-desc">ย้ายจุดเล็งจากหน้าอกขึ้นไปทางหัว เลื่อนเพื่อเลือกระดับ</div>
+                
+                <div class="big-percent" id="big-perc">100%</div>
+
+                <div class="hitbox-flex">
+                    <div class="hitbox-preview">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM12 14c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"/></svg>
+                    </div>
+                    <div class="hitbox-lines">
+                        <div class="hitbox-row active"><span>หัว</span> <span id="r-head">100%</span></div>
+                        <div class="hitbox-row"><span>คอ</span> <span id="r-neck">68%</span></div>
+                        <div class="hitbox-row"><span>ไหล่</span> <span id="r-shoulder">58%</span></div>
+                        <div class="hitbox-row"><span>อกบน</span> <span id="r-chest">30%</span></div>
+                        <div class="hitbox-row"><span>หน้าอก</span> <span id="r-body">0%</span></div>
+                    </div>
+                </div>
+                <input type="range" min="0" max="100" value="100" class="range-slider" oninput="updateHitbox(this.value)">
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">03 เร่งความเร็ว <span class="badge-new">ใหม่</span></span>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+                <div class="card-desc">ทำให้ตัวละครเคลื่อนที่เร็วขึ้น เลื่อนเพื่อเลือกระดับ</div>
+                <div class="speed-val-display" id="speed-disp">x1.0</div>
+                <input type="range" min="1.0" max="3.0" step="0.1" value="1.0" class="range-slider" oninput="updateSpeed(this.value)">
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVBAR -->
+    <nav class="navbar">
+        <button class="nav-item active" onclick="switchTab('home', 'หน้าแรก', this)">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            หน้าหลัก
+        </button>
+        <button class="nav-item" onclick="switchTab('features', 'ฟีเจอร์', this)">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            ฟีเจอร์
+        </button>
+    </nav>
+
+    <script>
+        let countdownInterval = null;
+        let isVpnConnected = false;
+
+        // ระบบโหลดเวลาและสถานะให้ทำงานต่อเนื่อง
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedEndTime = localStorage.getItem('xhub_end_time');
+            const savedDurationText = localStorage.getItem('xhub_duration_text');
+            if (savedEndTime) {
+                const endTime = parseInt(savedEndTime, 10);
+                const now = Date.now();
+                if (endTime > now) {
+                    const remainingSeconds = Math.floor((endTime - now) / 1000);
+                    document.getElementById('stat-active').innerText = "ปกติ";
+                    startTimer(remainingSeconds, savedDurationText);
+                } else {
+                    localStorage.removeItem('xhub_end_time');
+                    localStorage.removeItem('xhub_duration_text');
+                }
+            }
+        });
+
+        function switchTab(tabId, title, btn) {
+            document.querySelectorAll('.view-pane').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('pane-title').innerText = title;
+            btn.classList.add('active');
+        }
+
+        function selectChar(el) {
+            document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function updateHitbox(val) {
+            document.getElementById('big-perc').innerText = val + '%';
+            document.getElementById('r-head').innerText = val + '%';
+        }
+
+        function updateSpeed(val) {
+            document.getElementById('speed-disp').innerText = 'x' + parseFloat(val).toFixed(1);
+        }
+
+        let isFloat = false;
+        function toggleFloatMode() {
+            isFloat = !isFloat;
+            if(isFloat) {
+                document.body.classList.add('mini-float-active');
+                document.getElementById('floating-dock').innerHTML = '<span>📂 ขยาย</span>';
+            } else {
+                document.body.classList.remove('mini-float-active');
+                document.getElementById('floating-dock').innerHTML = '<span>⚡ X HUB</span>';
+            }
+        }
+
+        // ระบบยืนยันคีย์ pldk-xxxxx-xxx-x
+        function verifyKeyAndStartTimer() {
+            const val = document.getElementById('user-key').value.trim();
+            const parts = val.split('-');
+            if(parts.length < 4 || !val.startsWith('pldk-')) {
+                alert("รูปแบบคีย์ไม่ถูกต้อง! ตัวอย่าง: pldk-21123-268m-50");
+                return;
+            }
+
+            const num = parseInt(parts[parts.length - 1], 10);
+            let totalSeconds = 0;
+            let durationText = "";
+
+            if(num >= 1 && num <= 100) {
+                totalSeconds = 1 * 3600; // 1 ชั่วโมง
+                durationText = "1 ชม.";
+            } else if(num > 100 && num <= 1000) {
+                totalSeconds = 6 * 3600; // 6 ชั่วโมง
+                durationText = "6 ชม.";
+            } else if(num > 1000 && num <= 10000) {
+                totalSeconds = 24 * 3600; // 1 วัน
+                durationText = "1 วัน";
+            } else if(num > 10000 && num <= 50000) {
+                totalSeconds = 7 * 24 * 3600; // 7 วัน
+                durationText = "7 วัน";
+            } else if(num > 50000 && num <= 100000) {
+                totalSeconds = 30 * 24 * 3600; // 1 เดือน
+                durationText = "1 เดือน";
+            } else {
+                totalSeconds = 365 * 24 * 3600; // VIP
+                durationText = "VIP";
+            }
+
+            const endTime = Date.now() + (totalSeconds * 1000);
+            localStorage.setItem('xhub_end_time', endTime);
+            localStorage.setItem('xhub_duration_text', durationText);
+
+            document.getElementById('stat-active').innerText = "ปกติ";
+            startTimer(totalSeconds, durationText);
+            alert(`ยืนยันคีย์สำเร็จ! เวลานับถอยหลังเริ่มทำงานทันที (${durationText})`);
+        }
+
+        function startTimer(totalSeconds, durationText) {
+            document.getElementById('stat-expire').innerText = durationText;
+
+            if(countdownInterval) clearInt
